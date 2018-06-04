@@ -1,0 +1,771 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>Chedit</title>
+		<description>Welcome to Chedit</description>
+		<link>http://localhost:4000/jekyll-xixia</link>
+		<atom:link href="http://localhost:4000/jekyll-xixia/feed.xml" rel="self" type="application/rss+xml" />
+		
+			<item>
+				<title>《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型</title>
+				<description>&lt;p&gt;&lt;strong&gt;前言&lt;/strong&gt;
+最近看完了 LSTM 的一些外文资料，主要参考了 &lt;a href=&quot;http://link.zhihu.com/?target=http%3A//colah.github.io/posts/2015-08-Understanding-LSTMs/&quot;&gt;Colah 的 blog&lt;/a&gt;以及 &lt;a href=&quot;http://link.zhihu.com/?target=http%3A//karpathy.github.io/&quot;&gt;Andrej Karpathy blog&lt;/a&gt;的一些关于 RNN 和 LSTM 的材料，准备动手去实现一个 LSTM 模型。代码的基础框架来自于 Udacity 上深度学习纳米学位的课程（付费课程）的一个 demo，我刚开始看代码的时候真的是一头雾水，很多东西没有理解，后来反复查阅资料，并我重新对代码进行了学习和修改，对步骤进行了进一步的剖析，下面将一步步用 TensorFlow 来构建 LSTM 模型进行文本学习并试图去生成新的文本。本篇文章比较适合新手去操作，LSTM 层采用的是 BasicLSTMCell。&lt;/p&gt;
+
+&lt;p&gt;关于 RNN 与 LSTM 模型本文不做介绍，详情去查阅资料过着去看上面的 blog 链接，讲的很清楚啦。这篇文章主要是偏向实战，来自己动手构建 LSTM 模型。&lt;/p&gt;
+
+&lt;p&gt;数据集来自于外文版《安娜卡列妮娜》书籍的文本文档（本文后面会提供整个 project 的 git 链接）。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;工具介绍&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;语言：Python 3&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;包：TensorFlow 及其它数据处理包（见代码中）&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;编辑器：jupyter notebook&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;线上 GPU：floyd&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;正文部分&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;正文部分主要包括以下四个部分：&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 数据预处理：&lt;/strong&gt;加载数据、转换数据、分割数据 mini-batch&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 模型构建：&lt;/strong&gt;输入层，LSTM 层，输出层，训练误差，loss，optimizer&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 模型训练：&lt;/strong&gt;设置模型参数对模型进行训练&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 生成新文本：&lt;/strong&gt;训练新的文本&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;主题：整个文本将基于《安娜卡列妮娜》这本书的英文文本作为 LSTM 模型的训练数据，输入为单个字符，通过学习整个英文文档的字符（包括字母和标点符号等）来进行文本生成。在开始建模之前，我们首先要明确我们的输入和输出。即输入是字符，输出是预测出的新字符。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;一. 数据预处理&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在开始模型之前，我们首先要导入需要的包：&lt;/p&gt;
+
+&lt;pre style=&quot;font-size: 0.85em; font-family: Consolas, Inconsolata, Courier, monospace;font-size: 1em; line-height: 1.2em;margin: 1.2em 0px;&quot;&gt;
+import timeimport numpy as npimport tensorflow as tf
+&lt;/pre&gt;
+
+&lt;p&gt;这一部分主要包括了数据的转换与 mini-batch 的分割步骤。&lt;/p&gt;
+
+&lt;p&gt;首先我们来进行数据的加载与编码转换。由于我们是基于&lt;strong&gt;字符&lt;/strong&gt;（字母和标点符号等单个字符串，以下统称为&lt;strong&gt;字符&lt;/strong&gt;）进行模型构建，也就是说我们的输入和输出都是字符。举个栗子，假如我们有一个单词 “hello”，我们想要基于这个单词构建 LSTM，那么希望的到的结果是，输入 “h”，预测下一个字母为 “e”；输入 “e” 时，预测下一个字母为 “l”，等等。&lt;/p&gt;
+
+&lt;p&gt;因此我们的输入便是一个个字母，下面我们将文章进行转换。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927d9ffe1bc5.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上面的代码主要完成了下面三个任务：&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 得到了文章中所有的字符集合 vocab&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 得到一个字符 - 数字的映射 vocab_to_int&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 得到一个数字 - 字符的映射 int_to_vocab&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 对原文进行转码后的列表 encoded&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;完成了前面的数据预处理操作，接下来就是要划分我们的数据集，在这里我们使用 mini-batch 来进行模型训练，那么我们要如何划分数据集呢？在进行 mini-batch 划分之前，我们先来了解几个概念。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927da20000d1.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;假如我们目前手里有一个序列 1-12，我们接下来以这个序列为例来说明划分 mini-batch 中的几个概念。首先我们回顾一下，在 DNN 和 CNN 中，我们都会将数据分 batch 输入给神经网络，加入我们有 100 个样本，如果设置我们的 batch_size=10，那么意味着每次我们都会向神经网络输入 10 个样本进行训练调整参数。同样的，在 LSTM 中，batch_size 意味着每次向网络输入多少个样本，在上图中，当我们设置 batch_size=2 时，我们会将整个序列划分为 6 个 batch，每个 batch 中有两个数字。&lt;/p&gt;
+
+&lt;p&gt;然而由于 RNN 中存在着 “记忆”，也就是循环。事实上一个循环神经网络能够被看做是多个相同神经网络的叠加，在这个系统中，每一个网络都会传递信息给下一个。上面的图中，我们可以看到整个 RNN 网络由三个相同的神经网络单元叠加起来的序列。那么在这里就有了第二个概念 sequence_length（也叫 steps），中文叫序列长度。上图中序列长度是 3，可以看到将三个字符作为了一个序列。&lt;/p&gt;
+
+&lt;p&gt;有了上面两个概念，我们来规范一下后面的定义。我们定义一个 batch 中的序列个数为 N（即 batch_size），定义单个序列长度为 M（也就是我们的 num_steps）。那么实际上我们每个 batch 是一个N×M的数组，&lt;strong&gt;相当于我们的每个 batch 中有N×M个字符&lt;/strong&gt;。在上图中，当我们设置 N=2， M=3 时，我们可以得到每个 batch 的大小为 2 x 3 = 6 个字符，整个序列可以被分割成 12 / 6 = 2 个 batch。&lt;/p&gt;
+
+&lt;p&gt;基于上面的分析，我们下面来进行 mini-batch 的分割：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927db229197c.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上面的代码定义了一个 generator，调用函数会返回一个 generator 对象，我们可以获取一个 batch。&lt;/p&gt;
+
+&lt;p&gt;经过上面的步骤，我们已经完成了对数据集的预处理。下一步我们开始构建模型。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;二. 模型构建&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;模型构建部分主要包括了输入层，LSTM 层，输出层，loss，optimizer 等部分的构建，我们将一块一块来进行实现。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;1. 输入层&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在数据预处理阶段，我们定义了 mini-batch 的分割函数，输入层的 size 取决于我们设置 batch 的 size（n_seqs × n_steps），下面我们首先构建输入层。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927db6ec36f5.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;同样的，输出层的（因为输入一个字符，同样会输出一个字符）。除了输入输出外，我们还定义了 keep_prob 参数用来在后面控制 dropout 的保留结点数。关于 dropout 正则化请参考&lt;a href=&quot;http://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Dropout_%28neural_networks%29&quot;&gt;链接&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2.LSTM 层&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;LSTM 层是整个神经网络的关键部分。TensorFlow 中，tf.contrib.rnn 模块中有 BasicLSTMCell 和 LSTMCell 两个包，它们的区别在于：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;BasicLSTMCell does not allow cell clipping, a projection layer, and does not use peep-hole connections: it is the basic baseline.（来自 TensorFlow 官网）&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;在这里我们仅使用基本模块 BasicLSTMCell。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927db94071d4.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上面的代码中，我并没有使用 tf.contrib.rnn 模块，是因为我在使用远程 floyd 的 GPU 运行代码时候告诉我找不到这个模块，可以用 tf.nn.run_cell.BasicLSTMCell 替代。构建好 LSTM cell 后，为了防止过拟合，在它的隐层添加了 dropout 正则。&lt;/p&gt;
+
+&lt;p&gt;后面的 &lt;a href=&quot;http://link.zhihu.com/?target=https%3A//www.tensorflow.org/versions/master/api_docs/python/tf/contrib/rnn/MultiRNNCell&quot;&gt;MultiRNNCell&lt;/a&gt;实现了对基本 LSTM cell 的顺序堆叠，它接收的是 cell 对象组成的 list。最后 initial_state 定义了初始 cell state。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3. 输出层&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;到目前为止，我们的输入和 LSTM 层都已经构建完毕。接下来就要构造我们的输出层，输出层采用 softmax，它与 LSTM 进行全连接。对于每一个字符来说，它经过 LSTM 后的输出大小是1×L（L 为 LSTM cell 隐层的结点数量），我们上面也分析过输入一个 N x M 的 batch，我们从 LSTM 层得到的输出为N×M×L，要将这个输出与 softmax 全连接层建立连接，就需要对 LSTM 的输出进行重塑，变成( N * M ) × L 的一个 2D 的 tensor。softmax 层的结点数应该是 vocab 的大小（我们要计算概率分布）。因此整个 LSTM 层到 softmax 层的大小为L×vocab_size。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dc363ceef.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;将数据重塑后，我们对 LSTM 层和 softmax 层进行连接。并计算 logits 和 softmax 后的概率分布。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4. 训练误差计算&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;至此我们已经完成了整个网络的构建，接下来要定义 train loss 和 optimizer。我们知道从 sotfmax 层输出的是概率分布，因此我们要对 targets 进行 one-hot 编码。我们采用 &lt;a href=&quot;http://link.zhihu.com/?target=https%3A//www.tensorflow.org/versions/master/api_docs/python/tf/nn/softmax_cross_entropy_with_logits&quot;&gt;softmax_cross_entropy_with_logits&lt;/a&gt;交叉熵来计算 loss。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dc56b0fe2.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;5.Optimizer&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;我们知道 RNN 会遇到&lt;strong&gt;梯度爆炸（gradients exploding）&lt;/strong&gt;和&lt;strong&gt;梯度弥散（gradients disappearing)&lt;/strong&gt; 的问题。LSTM 解决了梯度弥散的问题，但是 gradients 仍然可能会爆炸，因此我们采用 gradient clippling 的方式来防止梯度爆炸。即通过设置一个阈值，当 gradients 超过这个阈值时，就将它重置为阈值大小，这就保证了梯度不会变得很大。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dc7620d04.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://link.zhihu.com/?target=https%3A//www.tensorflow.org/api_docs/python/tf/clip_by_global_norm&quot;&gt;tf.clip_by_global_norm&lt;/a&gt;会返回 clip 以后的 gradients 以及 global_norm。整个学习过程采用 AdamOptimizer&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;6. 模型组合&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;经过上面五个步骤，我们完成了所有的模块设置。下面我们来将这些部分组合起来，构建一个类。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dc98f2b8f.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;我们使用 tf.nn.dynamic_run 来运行 RNN 序列。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;三. 模型训练&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在模型训练之前，我们首先初始化一些参数，我们的参数主要有：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;batch_size: 单个 batch 中序列的个数&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;num_steps: 单个序列中字符数目&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;lstm_size: 隐层结点个数&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;num_layers: LSTM 层个数&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;learning_rate: 学习率&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;keep_prob: 训练时 dropout 层中保留结点比例&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dcc690a67.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这是我自己设置的一些参数，具体一些调参经验可以参考 &lt;a href=&quot;http://link.zhihu.com/?target=https%3A//github.com/karpathy/char-rnn%23tips-and-tricks&quot;&gt;Andrej Karpathy 的 git 上的建议&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;参数设置完毕后，离运行整个 LSTM 就差一步啦，下面我们来运行整个模型。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dce73a1a6.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;我这里设置的迭代次数为 20 次，并且在代码运行中我们设置了结点的保存，设置了每运行 200 次进行一次变量保存，这样的好处是有利于我们后面去直观地观察在整个训练过程中文本生成的结果是如何一步步 “进化” 的。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;四. 文本生成&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;经过漫长的模型训练，我们得到了一系列训练过程中保存下来的参数，可以利用这些参数来进行文本生成啦。当我们输入一个字符时，它会预测下一个，我们再将这个新的字符输入模型，就可以一直不断地生成字符，从而形成文本。&lt;/p&gt;
+
+&lt;p&gt;为了减少噪音，每次的预测值我会选择最可能的前 5 个进行随机选择，比如输入 h，预测结果概率最大的前五个为[o,i,e,u,b]，我们将随机从这五个中挑选一个作为新的字符，让过程加入随机因素会减少一些噪音的生成。&lt;/p&gt;
+
+&lt;p&gt;代码封装了两个函数来做文本生成，具体请参看文章尾部的 git 链接中的源码。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;训练步数：200&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;当训练步数为 200 的时候，LSTM 生成的文本大概长下面这个样子：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dd51b5342.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;看起来像是字符的随机组合，但是可以看到有一些单词例如 hat，her 等已经出现，并且生成了成对的引号。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;训练步数：1000&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dd6a403f9.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;当训练步数到达 1000 的时候，已经开始有简单的句子出现，并且单词看起来似乎不是那么乱了。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;训练步数：2000&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dd7e5353a.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;当训练步数达到 2000 的时候，单词和句子看起来已经有所规范。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;训练步数：3960&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dd8f90f48.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;当训练结束时（本文仅训练了 3960 步），生成的文本已经有小部分可以读的比较通顺了，而且很少有单词拼写的错误。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;五. 总结&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;整个文章通过构建 LSTM 模型完成了对《安娜卡列宁娜》文本的学习并且基于学习成果生成了新的文本。&lt;/p&gt;
+
+&lt;p&gt;通过观察上面的生成文本，我们可以看出随着训练步数的增加，模型的训练误差在持续减少。本文仅设置了 20 次迭代，尝试更大次数的迭代可能会取得更好的效果。&lt;/p&gt;
+
+&lt;p&gt;个人觉得 LSTM 对于文本的学习能力还是很强，后面可能将针对中文文本构造一些学习模型，应该会更有意思！&lt;/p&gt;
+
+&lt;p&gt;我对 RNN 也是在不断地探索与学习中，文中不免会有一些错误和谬误，恳请各位指正，非常感谢！&lt;/p&gt;
+</description>
+				<pubDate>Sun, 03 Jun 2018 14:10:51 +0800</pubDate>
+				<link>http://localhost:4000/jekyll-xixia/jekyll/2018/06/03/test1.html</link>
+				<guid isPermaLink="true">http://localhost:4000/jekyll-xixia/jekyll/2018/06/03/test1.html</guid>
+			</item>
+		
+			<item>
+				<title>《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型</title>
+				<description>&lt;p&gt;&lt;strong&gt;前言&lt;/strong&gt;
+最近看完了 LSTM 的一些外文资料，主要参考了 &lt;a href=&quot;http://link.zhihu.com/?target=http%3A//colah.github.io/posts/2015-08-Understanding-LSTMs/&quot;&gt;Colah 的 blog&lt;/a&gt;以及 &lt;a href=&quot;http://link.zhihu.com/?target=http%3A//karpathy.github.io/&quot;&gt;Andrej Karpathy blog&lt;/a&gt;的一些关于 RNN 和 LSTM 的材料，准备动手去实现一个 LSTM 模型。代码的基础框架来自于 Udacity 上深度学习纳米学位的课程（付费课程）的一个 demo，我刚开始看代码的时候真的是一头雾水，很多东西没有理解，后来反复查阅资料，并我重新对代码进行了学习和修改，对步骤进行了进一步的剖析，下面将一步步用 TensorFlow 来构建 LSTM 模型进行文本学习并试图去生成新的文本。本篇文章比较适合新手去操作，LSTM 层采用的是 BasicLSTMCell。&lt;/p&gt;
+
+&lt;p&gt;关于 RNN 与 LSTM 模型本文不做介绍，详情去查阅资料过着去看上面的 blog 链接，讲的很清楚啦。这篇文章主要是偏向实战，来自己动手构建 LSTM 模型。&lt;/p&gt;
+
+&lt;p&gt;数据集来自于外文版《安娜卡列妮娜》书籍的文本文档（本文后面会提供整个 project 的 git 链接）。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;工具介绍&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;语言：Python 3&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;包：TensorFlow 及其它数据处理包（见代码中）&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;编辑器：jupyter notebook&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;线上 GPU：floyd&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;正文部分&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;正文部分主要包括以下四个部分：&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 数据预处理：&lt;/strong&gt;加载数据、转换数据、分割数据 mini-batch&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 模型构建：&lt;/strong&gt;输入层，LSTM 层，输出层，训练误差，loss，optimizer&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 模型训练：&lt;/strong&gt;设置模型参数对模型进行训练&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 生成新文本：&lt;/strong&gt;训练新的文本&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;主题：整个文本将基于《安娜卡列妮娜》这本书的英文文本作为 LSTM 模型的训练数据，输入为单个字符，通过学习整个英文文档的字符（包括字母和标点符号等）来进行文本生成。在开始建模之前，我们首先要明确我们的输入和输出。即输入是字符，输出是预测出的新字符。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;一. 数据预处理&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在开始模型之前，我们首先要导入需要的包：&lt;/p&gt;
+
+&lt;pre style=&quot;font-size: 0.85em; font-family: Consolas, Inconsolata, Courier, monospace;font-size: 1em; line-height: 1.2em;margin: 1.2em 0px;&quot;&gt;
+import timeimport numpy as npimport tensorflow as tf
+&lt;/pre&gt;
+
+&lt;p&gt;这一部分主要包括了数据的转换与 mini-batch 的分割步骤。&lt;/p&gt;
+
+&lt;p&gt;首先我们来进行数据的加载与编码转换。由于我们是基于&lt;strong&gt;字符&lt;/strong&gt;（字母和标点符号等单个字符串，以下统称为&lt;strong&gt;字符&lt;/strong&gt;）进行模型构建，也就是说我们的输入和输出都是字符。举个栗子，假如我们有一个单词 “hello”，我们想要基于这个单词构建 LSTM，那么希望的到的结果是，输入 “h”，预测下一个字母为 “e”；输入 “e” 时，预测下一个字母为 “l”，等等。&lt;/p&gt;
+
+&lt;p&gt;因此我们的输入便是一个个字母，下面我们将文章进行转换。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927d9ffe1bc5.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上面的代码主要完成了下面三个任务：&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 得到了文章中所有的字符集合 vocab&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 得到一个字符 - 数字的映射 vocab_to_int&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 得到一个数字 - 字符的映射 int_to_vocab&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;- 对原文进行转码后的列表 encoded&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;完成了前面的数据预处理操作，接下来就是要划分我们的数据集，在这里我们使用 mini-batch 来进行模型训练，那么我们要如何划分数据集呢？在进行 mini-batch 划分之前，我们先来了解几个概念。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927da20000d1.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;假如我们目前手里有一个序列 1-12，我们接下来以这个序列为例来说明划分 mini-batch 中的几个概念。首先我们回顾一下，在 DNN 和 CNN 中，我们都会将数据分 batch 输入给神经网络，加入我们有 100 个样本，如果设置我们的 batch_size=10，那么意味着每次我们都会向神经网络输入 10 个样本进行训练调整参数。同样的，在 LSTM 中，batch_size 意味着每次向网络输入多少个样本，在上图中，当我们设置 batch_size=2 时，我们会将整个序列划分为 6 个 batch，每个 batch 中有两个数字。&lt;/p&gt;
+
+&lt;p&gt;然而由于 RNN 中存在着 “记忆”，也就是循环。事实上一个循环神经网络能够被看做是多个相同神经网络的叠加，在这个系统中，每一个网络都会传递信息给下一个。上面的图中，我们可以看到整个 RNN 网络由三个相同的神经网络单元叠加起来的序列。那么在这里就有了第二个概念 sequence_length（也叫 steps），中文叫序列长度。上图中序列长度是 3，可以看到将三个字符作为了一个序列。&lt;/p&gt;
+
+&lt;p&gt;有了上面两个概念，我们来规范一下后面的定义。我们定义一个 batch 中的序列个数为 N（即 batch_size），定义单个序列长度为 M（也就是我们的 num_steps）。那么实际上我们每个 batch 是一个N×M的数组，&lt;strong&gt;相当于我们的每个 batch 中有N×M个字符&lt;/strong&gt;。在上图中，当我们设置 N=2， M=3 时，我们可以得到每个 batch 的大小为 2 x 3 = 6 个字符，整个序列可以被分割成 12 / 6 = 2 个 batch。&lt;/p&gt;
+
+&lt;p&gt;基于上面的分析，我们下面来进行 mini-batch 的分割：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927db229197c.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上面的代码定义了一个 generator，调用函数会返回一个 generator 对象，我们可以获取一个 batch。&lt;/p&gt;
+
+&lt;p&gt;经过上面的步骤，我们已经完成了对数据集的预处理。下一步我们开始构建模型。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;二. 模型构建&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;模型构建部分主要包括了输入层，LSTM 层，输出层，loss，optimizer 等部分的构建，我们将一块一块来进行实现。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;1. 输入层&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在数据预处理阶段，我们定义了 mini-batch 的分割函数，输入层的 size 取决于我们设置 batch 的 size（n_seqs × n_steps），下面我们首先构建输入层。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927db6ec36f5.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;同样的，输出层的（因为输入一个字符，同样会输出一个字符）。除了输入输出外，我们还定义了 keep_prob 参数用来在后面控制 dropout 的保留结点数。关于 dropout 正则化请参考&lt;a href=&quot;http://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Dropout_%28neural_networks%29&quot;&gt;链接&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2.LSTM 层&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;LSTM 层是整个神经网络的关键部分。TensorFlow 中，tf.contrib.rnn 模块中有 BasicLSTMCell 和 LSTMCell 两个包，它们的区别在于：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;BasicLSTMCell does not allow cell clipping, a projection layer, and does not use peep-hole connections: it is the basic baseline.（来自 TensorFlow 官网）&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;在这里我们仅使用基本模块 BasicLSTMCell。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927db94071d4.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上面的代码中，我并没有使用 tf.contrib.rnn 模块，是因为我在使用远程 floyd 的 GPU 运行代码时候告诉我找不到这个模块，可以用 tf.nn.run_cell.BasicLSTMCell 替代。构建好 LSTM cell 后，为了防止过拟合，在它的隐层添加了 dropout 正则。&lt;/p&gt;
+
+&lt;p&gt;后面的 &lt;a href=&quot;http://link.zhihu.com/?target=https%3A//www.tensorflow.org/versions/master/api_docs/python/tf/contrib/rnn/MultiRNNCell&quot;&gt;MultiRNNCell&lt;/a&gt;实现了对基本 LSTM cell 的顺序堆叠，它接收的是 cell 对象组成的 list。最后 initial_state 定义了初始 cell state。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3. 输出层&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;到目前为止，我们的输入和 LSTM 层都已经构建完毕。接下来就要构造我们的输出层，输出层采用 softmax，它与 LSTM 进行全连接。对于每一个字符来说，它经过 LSTM 后的输出大小是1×L（L 为 LSTM cell 隐层的结点数量），我们上面也分析过输入一个 N x M 的 batch，我们从 LSTM 层得到的输出为N×M×L，要将这个输出与 softmax 全连接层建立连接，就需要对 LSTM 的输出进行重塑，变成( N * M ) × L 的一个 2D 的 tensor。softmax 层的结点数应该是 vocab 的大小（我们要计算概率分布）。因此整个 LSTM 层到 softmax 层的大小为L×vocab_size。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dc363ceef.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;将数据重塑后，我们对 LSTM 层和 softmax 层进行连接。并计算 logits 和 softmax 后的概率分布。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4. 训练误差计算&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;至此我们已经完成了整个网络的构建，接下来要定义 train loss 和 optimizer。我们知道从 sotfmax 层输出的是概率分布，因此我们要对 targets 进行 one-hot 编码。我们采用 &lt;a href=&quot;http://link.zhihu.com/?target=https%3A//www.tensorflow.org/versions/master/api_docs/python/tf/nn/softmax_cross_entropy_with_logits&quot;&gt;softmax_cross_entropy_with_logits&lt;/a&gt;交叉熵来计算 loss。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dc56b0fe2.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;5.Optimizer&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;我们知道 RNN 会遇到&lt;strong&gt;梯度爆炸（gradients exploding）&lt;/strong&gt;和&lt;strong&gt;梯度弥散（gradients disappearing)&lt;/strong&gt; 的问题。LSTM 解决了梯度弥散的问题，但是 gradients 仍然可能会爆炸，因此我们采用 gradient clippling 的方式来防止梯度爆炸。即通过设置一个阈值，当 gradients 超过这个阈值时，就将它重置为阈值大小，这就保证了梯度不会变得很大。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dc7620d04.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://link.zhihu.com/?target=https%3A//www.tensorflow.org/api_docs/python/tf/clip_by_global_norm&quot;&gt;tf.clip_by_global_norm&lt;/a&gt;会返回 clip 以后的 gradients 以及 global_norm。整个学习过程采用 AdamOptimizer&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;6. 模型组合&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;经过上面五个步骤，我们完成了所有的模块设置。下面我们来将这些部分组合起来，构建一个类。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dc98f2b8f.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;我们使用 tf.nn.dynamic_run 来运行 RNN 序列。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;三. 模型训练&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在模型训练之前，我们首先初始化一些参数，我们的参数主要有：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;batch_size: 单个 batch 中序列的个数&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;num_steps: 单个序列中字符数目&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;lstm_size: 隐层结点个数&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;num_layers: LSTM 层个数&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;learning_rate: 学习率&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;keep_prob: 训练时 dropout 层中保留结点比例&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dcc690a67.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这是我自己设置的一些参数，具体一些调参经验可以参考 &lt;a href=&quot;http://link.zhihu.com/?target=https%3A//github.com/karpathy/char-rnn%23tips-and-tricks&quot;&gt;Andrej Karpathy 的 git 上的建议&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;参数设置完毕后，离运行整个 LSTM 就差一步啦，下面我们来运行整个模型。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dce73a1a6.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;我这里设置的迭代次数为 20 次，并且在代码运行中我们设置了结点的保存，设置了每运行 200 次进行一次变量保存，这样的好处是有利于我们后面去直观地观察在整个训练过程中文本生成的结果是如何一步步 “进化” 的。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;四. 文本生成&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;经过漫长的模型训练，我们得到了一系列训练过程中保存下来的参数，可以利用这些参数来进行文本生成啦。当我们输入一个字符时，它会预测下一个，我们再将这个新的字符输入模型，就可以一直不断地生成字符，从而形成文本。&lt;/p&gt;
+
+&lt;p&gt;为了减少噪音，每次的预测值我会选择最可能的前 5 个进行随机选择，比如输入 h，预测结果概率最大的前五个为[o,i,e,u,b]，我们将随机从这五个中挑选一个作为新的字符，让过程加入随机因素会减少一些噪音的生成。&lt;/p&gt;
+
+&lt;p&gt;代码封装了两个函数来做文本生成，具体请参看文章尾部的 git 链接中的源码。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;训练步数：200&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;当训练步数为 200 的时候，LSTM 生成的文本大概长下面这个样子：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dd51b5342.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;看起来像是字符的随机组合，但是可以看到有一些单词例如 hat，her 等已经出现，并且生成了成对的引号。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;训练步数：1000&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dd6a403f9.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;当训练步数到达 1000 的时候，已经开始有简单的句子出现，并且单词看起来似乎不是那么乱了。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;训练步数：2000&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dd7e5353a.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;当训练步数达到 2000 的时候，单词和句子看起来已经有所规范。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;训练步数：3960&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;img src=&quot;https://static.leiphone.com/uploads/new/article/740_740/201705/5927dd8f90f48.png?imageMogr2/format/jpg/quality/90&quot; alt=&quot;《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型&quot; /&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;当训练结束时（本文仅训练了 3960 步），生成的文本已经有小部分可以读的比较通顺了，而且很少有单词拼写的错误。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;五. 总结&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;整个文章通过构建 LSTM 模型完成了对《安娜卡列宁娜》文本的学习并且基于学习成果生成了新的文本。&lt;/p&gt;
+
+&lt;p&gt;通过观察上面的生成文本，我们可以看出随着训练步数的增加，模型的训练误差在持续减少。本文仅设置了 20 次迭代，尝试更大次数的迭代可能会取得更好的效果。&lt;/p&gt;
+
+&lt;p&gt;个人觉得 LSTM 对于文本的学习能力还是很强，后面可能将针对中文文本构造一些学习模型，应该会更有意思！&lt;/p&gt;
+
+&lt;p&gt;我对 RNN 也是在不断地探索与学习中，文中不免会有一些错误和谬误，恳请各位指正，非常感谢！&lt;/p&gt;
+</description>
+				<pubDate>Tue, 19 Sep 2017 14:10:51 +0800</pubDate>
+				<link>http://localhost:4000/jekyll-xixia/jekyll/2017/09/19/README1.html</link>
+				<guid isPermaLink="true">http://localhost:4000/jekyll-xixia/jekyll/2017/09/19/README1.html</guid>
+			</item>
+		
+			<item>
+				<title>Read Me</title>
+				<description>&lt;h1 id=&quot;jekyll-xixia&quot;&gt;Jekyll Xixia&lt;/h1&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Get it from &lt;a href=&quot;https://github.com/zxixia/jekyll-xixia&quot;&gt;github&lt;/a&gt;.&lt;/li&gt;
+  &lt;li&gt;See the &lt;a href=&quot;http://xixia.info/jekyll-xixia/&quot;&gt;live demo&lt;/a&gt;.&lt;/li&gt;
+  &lt;li&gt;See it &lt;a href=&quot;http://xixia.info/&quot;&gt;in action on my own blog&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;A simple and clean Jekyll theme using &lt;a href=&quot;http://getbootstrap.com&quot;&gt;bootstrap&lt;/a&gt;
+(not to be confused with jekyll-bootstrap) that’s easy to modify and very
+modular in component and element reuse.&lt;/p&gt;
+
+&lt;p&gt;The theme works well on mobile phones, using a collapsable nav bar and hiding the
+sidebar. The links pane in the sidebar is available on mobile through the nav menu,
+and you can do the same thing for any other sections added to the sidebar.&lt;/p&gt;
+
+&lt;p&gt;Don’t forget to occassionally merge against my upstream repository so you can get
+the latest changes. Pull requests are encouraged and accepted!&lt;/p&gt;
+
+&lt;h1 id=&quot;preview&quot;&gt;Preview&lt;/h1&gt;
+&lt;p&gt;&lt;img src=&quot;/jekyll-xixia//assets/images/preview.png&quot; alt=&quot;Xixia&quot; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;license&quot;&gt;License&lt;/h1&gt;
+
+&lt;p&gt;The content of this theme is distributed and licensed under a
+&lt;img src=&quot;/jekyll-xixia/assets/images/cc_by_88x31.png&quot; alt=&quot;License Badge&quot; /&gt;
+&lt;a href=&quot;https://creativecommons.org/licenses/by/4.0/legalcode&quot;&gt;Creative Commons Attribution 4.0 License&lt;/a&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;This license lets others distribute, remix, tweak, and build upon your work,
+even commercially, as long as they credit you for the original creation. This
+is the most accommodating of licenses offered. Recommended for maximum
+dissemination and use of licensed materials.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In other words: you can do anything you want with this theme on any site, just please
+provide a link to &lt;a href=&quot;https://github.com/zxixia/jekyll-xixia&quot;&gt;the original theme on github&lt;/a&gt;
+so I get credit for the original design. Beyond that, have at it!&lt;/p&gt;
+
+&lt;h1 id=&quot;thanks&quot;&gt;Thanks&lt;/h1&gt;
+
+&lt;p&gt;1，&lt;a href=&quot;http://jekyllrb.com/&quot;&gt;Jekyll&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;2，&lt;a href=&quot;http://getbootstrap.com/&quot;&gt;Bootstrap&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;3，&lt;a href=&quot;https://github.com/&quot;&gt;Github&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;4，&lt;a href=&quot;https://github.com/scotte/jekyll-clean&quot;&gt;Jekyll Clean Theme&lt;/a&gt;&lt;/p&gt;
+
+</description>
+				<pubDate>Tue, 19 Sep 2017 00:00:00 +0800</pubDate>
+				<link>http://localhost:4000/jekyll-xixia/other/2017/09/19/README.html</link>
+				<guid isPermaLink="true">http://localhost:4000/jekyll-xixia/other/2017/09/19/README.html</guid>
+			</item>
+		
+			<item>
+				<title>How to get beautiful ASCII pics and ASCII text</title>
+				<description>&lt;h3 id=&quot;1ascii-generator&quot;&gt;1，ASCII Generator&lt;/h3&gt;
+
+&lt;p&gt;In &lt;a href=&quot;http://www.network-science.de/ascii/&quot;&gt;ASCII Generator&lt;/a&gt;, you can generate your ASCII texts。&lt;/p&gt;
+
+&lt;p&gt;Such like the &lt;strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;XIXIA&lt;/code&gt;&lt;/strong&gt;！&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-v&quot; data-lang=&quot;v&quot;&gt;____  ___._______  ___.___   _____   
+\   \/  /|   \   \/  /|   | /  _  \  
+ \     / |   |\     / |   |/  /_\  \ 
+ /     \ |   |/     \ |   /    |    \
+/___/\  \|___/___/\  \|___\____|__  /
+      \_/          \_/            \/ 
+
+------------------------------------
+___   ___  __  ___   ___  __       ___      
+\  \ /  / |  | \  \ /  / |  |     /   \     
+ \  V  /  |  |  \  V  /  |  |    /  ^  \    
+  &amp;gt;   &amp;lt;   |  |   &amp;gt;   &amp;lt;   |  |   /  /_\  \   
+ /  .  \  |  |  /  .  \  |  |  /  _____  \  
+/__/ \__\ |__| /__/ \__\ |__| /__/     \__\ 
+
+------------------------------------
+__   _________   _______          
+\ \ / /_   _\ \ / /_   _|   /\    
+ \ V /  | |  \ V /  | |    /  \   
+  &amp;gt; &amp;lt;   | |   &amp;gt; &amp;lt;   | |   / /\ \  
+ / . \ _| |_ / . \ _| |_ / ____ \ 
+/_/ \_\_____/_/ \_\_____/_/    \_\   &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h3 id=&quot;2chriscom&quot;&gt;2，Chris.com&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.chris.com/ascii/&quot;&gt;Chris.com&lt;/a&gt; collects a lot of ASCII pics, such like the world map：&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-v&quot; data-lang=&quot;v&quot;&gt;-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----
+           . _..::__:  ,-&quot;-&quot;._        |7       ,     _,.__
+   _.___ _ _&amp;lt;_&amp;gt;`!(._`.`-.    /         _._     `_ ,_/  '  '-._.---.-.__
+&amp;gt;.{     &quot; &quot; `-==,',._\{  \  / {)      / _ &quot;&amp;gt;_,-' `                mt-2_
+  \_.:--.       `._ )`^-. &quot;'       , [_/(                       __,/-'
+ '&quot;'     \         &quot;    _L        oD_,--'                )     /. (|
+          |           ,'          _)_.\\._&amp;lt;&amp;gt; 6              _,' /  '
+          `.         /           [_/_'` `&quot;(                &amp;lt;'}  )
+           \\    .-. )           /   `-'&quot;..' `:.#          _)  '
+    `        \  (  `(           /         `:\  &amp;gt; \  ,-^.  /' '
+              `._,   &quot;&quot;         |           \`'   \|   ?_)  {\
+                 `=.---.        `._._       ,'     &quot;`  |' ,- '.
+                   |    `-._         |     /          `:`&amp;lt;_|h--._
+                   (        &amp;gt;        .     | ,          `=.__.`-'\
+                    `.     /         |     |{|              ,-.,\     .
+                     |   ,'           \   / `'            ,&quot;     \
+                     |  /              |_'                |  __  /
+                     | |                                  '-'  `-'   \.
+                     |/                                         &quot;    /
+                     \.                                             '
+
+                      ,/            ______._.--._ _..---.---------._
+     ,-----&quot;-..?----_/ )      __,-'&quot;             &quot;                  (
+-.._(                  `-----'                                       `-
+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----
+Map (C) 1998 Matthew Thomas. Freely usable if this line is included. &amp;lt;-&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;&lt;br /&gt;
+Elephant.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-v&quot; data-lang=&quot;v&quot;&gt;              ___.-~&quot;~-._   __....__
+            .'    `    \ ~&quot;~        ``-.
+           /` _      )  `\              `\
+          /`  a)    /     |               `\
+         :`        /      |                 \
+    &amp;lt;`-._|`  .-.  (      /   .            `;\\
+     `-. `--'_.'-.;\___/'   .      .       | \\
+  _     /:--`     |        /     /        .'  \\
+ (&quot;\   /`/        |       '     '         /    :`;
+ `\'\_/`/         .\     /`~`=-.:        /     ``
+   `._.'          /`\    |      `\      /(
+                 /  /\   |        `Y   /  \
+           jgs  J  /  Y  |         |  /`\  \
+               /  |   |  |         |  |  |  |
+              &quot;---&quot;  /___|        /___|  /__|
+                     '&quot;&quot;&quot;         '&quot;&quot;&quot;  '&quot;&quot;&quot;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h3 id=&quot;3welcome-to-lost-in-xixia&quot;&gt;3，Welcome to lost in Xixia&lt;/h3&gt;
+&lt;p&gt;The 404 page of Xixia, is based on ASCII pics and ASCII texts!&lt;/p&gt;
+
+&lt;p&gt;So, warmly welcome you to lost in &lt;a href=&quot;http://xixia.info/welcome-lost-in-xixia&quot;&gt;Xixia&lt;/a&gt;!&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h3 id=&quot;thanks&quot;&gt;Thanks：&lt;/h3&gt;
+
+&lt;p&gt;1，&lt;a href=&quot;http://www.chris.com/ascii/&quot;&gt;Chris.com&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;2，&lt;a href=&quot;http://www.network-science.de/ascii/&quot;&gt;ASCII Generator&lt;/a&gt;&lt;/p&gt;
+
+</description>
+				<pubDate>Fri, 15 Sep 2017 00:00:00 +0800</pubDate>
+				<link>http://localhost:4000/jekyll-xixia/programmer/2017/09/15/ascii-art-and-text.html</link>
+				<guid isPermaLink="true">http://localhost:4000/jekyll-xixia/programmer/2017/09/15/ascii-art-and-text.html</guid>
+			</item>
+		
+			<item>
+				<title>Welcome to Jekyll!</title>
+				<description>&lt;p&gt;You’ll find this post in your &lt;code class=&quot;highlighter-rouge&quot;&gt;_posts&lt;/code&gt; directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run &lt;code class=&quot;highlighter-rouge&quot;&gt;jekyll serve&lt;/code&gt;, which launches a web server and auto-regenerates your site when a file is updated.&lt;/p&gt;
+
+&lt;p&gt;To add new posts, simply add a file in the &lt;code class=&quot;highlighter-rouge&quot;&gt;_posts&lt;/code&gt; directory that follows the convention &lt;code class=&quot;highlighter-rouge&quot;&gt;YYYY-MM-DD-name-of-post.ext&lt;/code&gt; and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.&lt;/p&gt;
+
+&lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hi, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Tom'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints 'Hi, Tom' to STDOUT.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Check out the &lt;a href=&quot;https://jekyllrb.com/docs/home&quot;&gt;Jekyll docs&lt;/a&gt; for more info on how to get the most out of Jekyll. File all bugs/feature requests at &lt;a href=&quot;https://github.com/jekyll/jekyll&quot;&gt;Jekyll’s GitHub repo&lt;/a&gt;. If you have questions, you can ask them on &lt;a href=&quot;https://talk.jekyllrb.com/&quot;&gt;Jekyll Talk&lt;/a&gt;.&lt;/p&gt;
+
+</description>
+				<pubDate>Tue, 05 Sep 2017 14:10:51 +0800</pubDate>
+				<link>http://localhost:4000/jekyll-xixia/jekyll/2017/09/05/welcome-to-jekyll.html</link>
+				<guid isPermaLink="true">http://localhost:4000/jekyll-xixia/jekyll/2017/09/05/welcome-to-jekyll.html</guid>
+			</item>
+		
+			<item>
+				<title>Readme of Jekyll!</title>
+				<description>&lt;h1 id=&quot;jekyll&quot;&gt;&lt;a href=&quot;https://jekyllrb.com/&quot;&gt;Jekyll&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://rubygems.org/gems/jekyll&quot;&gt;&lt;img src=&quot;https://img.shields.io/gem/v/jekyll.svg&quot; alt=&quot;Gem Version&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://travis-ci.org/jekyll/jekyll&quot;&gt;&lt;img src=&quot;https://img.shields.io/travis/jekyll/jekyll/master.svg?label=Linux%20build&quot; alt=&quot;Linux Build Status&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://ci.appveyor.com/project/jekyll/jekyll/branch/master&quot;&gt;&lt;img src=&quot;https://img.shields.io/appveyor/ci/jekyll/jekyll/master.svg?label=Windows%20build&quot; alt=&quot;Windows Build status&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://codeclimate.com/github/jekyll/jekyll/coverage&quot;&gt;&lt;img src=&quot;https://img.shields.io/codeclimate/coverage/github/jekyll/jekyll.svg&quot; alt=&quot;Test Coverage&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://codeclimate.com/github/jekyll/jekyll&quot;&gt;&lt;img src=&quot;https://img.shields.io/codeclimate/github/jekyll/jekyll.svg&quot; alt=&quot;Code Climate&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://gemnasium.com/jekyll/jekyll&quot;&gt;&lt;img src=&quot;https://img.shields.io/gemnasium/jekyll/jekyll.svg&quot; alt=&quot;Dependency Status&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://hakiri.io/github/jekyll/jekyll/master&quot;&gt;&lt;img src=&quot;https://hakiri.io/github/jekyll/jekyll/master.svg&quot; alt=&quot;Security&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Jekyll is a simple, blog-aware, static site generator perfect for personal, project, or organization sites. Think of it like a file-based CMS, without all the complexity. Jekyll takes your content, renders Markdown and Liquid templates, and spits out a complete, static website ready to be served by Apache, Nginx or another web server. Jekyll is the engine behind &lt;a href=&quot;https://pages.github.com&quot;&gt;GitHub Pages&lt;/a&gt;, which you can use to host sites right from your GitHub repositories.&lt;/p&gt;
+
+&lt;h2 id=&quot;philosophy&quot;&gt;Philosophy&lt;/h2&gt;
+
+&lt;p&gt;Jekyll does what you tell it to do — no more, no less. It doesn’t try to outsmart users by making bold assumptions, nor does it burden them with needless complexity and configuration. Put simply, Jekyll gets out of your way and allows you to concentrate on what truly matters: your content.&lt;/p&gt;
+
+&lt;p&gt;See: https://jekyllrb.com/philosophy&lt;/p&gt;
+
+&lt;h2 id=&quot;having-trouble&quot;&gt;Having trouble?&lt;/h2&gt;
+
+&lt;p&gt;See: https://jekyllrb.com/docs/troubleshooting/&lt;/p&gt;
+
+&lt;h2 id=&quot;getting-started&quot;&gt;Getting Started&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://jekyllrb.com/docs/installation/&quot;&gt;Install&lt;/a&gt; the gem&lt;/li&gt;
+  &lt;li&gt;Read up about its &lt;a href=&quot;https://jekyllrb.com/docs/usage/&quot;&gt;Usage&lt;/a&gt; and &lt;a href=&quot;https://jekyllrb.com/docs/configuration/&quot;&gt;Configuration&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Take a gander at some existing &lt;a href=&quot;https://wiki.github.com/jekyll/jekyll/sites&quot;&gt;Sites&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/jekyll/jekyll/fork&quot;&gt;Fork&lt;/a&gt; and &lt;a href=&quot;https://jekyllrb.com/docs/contributing/&quot;&gt;Contribute&lt;/a&gt; your own modifications&lt;/li&gt;
+  &lt;li&gt;Have questions? Check out our official forum community &lt;a href=&quot;https://talk.jekyllrb.com/&quot;&gt;Jekyll Talk&lt;/a&gt; or &lt;a href=&quot;https://botbot.me/freenode/jekyll/&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;#jekyll&lt;/code&gt; on irc.freenode.net&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;code-of-conduct&quot;&gt;Code of Conduct&lt;/h2&gt;
+
+&lt;p&gt;In order to have a more open and welcoming community, Jekyll adheres to a
+&lt;a href=&quot;CODE_OF_CONDUCT.markdown&quot;&gt;code of conduct&lt;/a&gt; adapted from the Ruby on Rails code of
+conduct.&lt;/p&gt;
+
+&lt;p&gt;Please adhere to this code of conduct in any interactions you have in the
+Jekyll community. It is strictly enforced on all official Jekyll
+repositories, websites, and resources. If you encounter someone violating
+these terms, please let a &lt;a href=&quot;https://github.com/orgs/jekyll/teams/affinity-team-captains/members&quot;&gt;team captain&lt;/a&gt; know and we will address it as soon as possible.&lt;/p&gt;
+
+&lt;h2 id=&quot;diving-in&quot;&gt;Diving In&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://import.jekyllrb.com/docs/home/&quot;&gt;Migrate&lt;/a&gt; from your previous system&lt;/li&gt;
+  &lt;li&gt;Learn how the &lt;a href=&quot;https://jekyllrb.com/docs/frontmatter/&quot;&gt;YAML Front Matter&lt;/a&gt; works&lt;/li&gt;
+  &lt;li&gt;Put information on your site with &lt;a href=&quot;https://jekyllrb.com/docs/variables/&quot;&gt;Variables&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Customize the &lt;a href=&quot;https://jekyllrb.com/docs/permalinks/&quot;&gt;Permalinks&lt;/a&gt; your posts are generated with&lt;/li&gt;
+  &lt;li&gt;Use the built-in &lt;a href=&quot;https://jekyllrb.com/docs/templates/&quot;&gt;Liquid Extensions&lt;/a&gt; to make your life easier&lt;/li&gt;
+  &lt;li&gt;Use custom &lt;a href=&quot;https://jekyllrb.com/docs/plugins/&quot;&gt;Plugins&lt;/a&gt; to generate content specific to your site&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;license&quot;&gt;License&lt;/h2&gt;
+
+&lt;p&gt;See the &lt;a href=&quot;https://github.com/jekyll/jekyll/blob/master/LICENSE&quot;&gt;LICENSE&lt;/a&gt; file.&lt;/p&gt;
+</description>
+				<pubDate>Tue, 05 Sep 2017 14:10:51 +0800</pubDate>
+				<link>http://localhost:4000/jekyll-xixia/jekyll/2017/09/05/reademe-of-jekyll.html</link>
+				<guid isPermaLink="true">http://localhost:4000/jekyll-xixia/jekyll/2017/09/05/reademe-of-jekyll.html</guid>
+			</item>
+		
+			<item>
+				<title>Another copy of the Readme of Jekyll!</title>
+				<description>&lt;h1 id=&quot;jekyll&quot;&gt;&lt;a href=&quot;https://jekyllrb.com/&quot;&gt;Jekyll&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://rubygems.org/gems/jekyll&quot;&gt;&lt;img src=&quot;https://img.shields.io/gem/v/jekyll.svg&quot; alt=&quot;Gem Version&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://travis-ci.org/jekyll/jekyll&quot;&gt;&lt;img src=&quot;https://img.shields.io/travis/jekyll/jekyll/master.svg?label=Linux%20build&quot; alt=&quot;Linux Build Status&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://ci.appveyor.com/project/jekyll/jekyll/branch/master&quot;&gt;&lt;img src=&quot;https://img.shields.io/appveyor/ci/jekyll/jekyll/master.svg?label=Windows%20build&quot; alt=&quot;Windows Build status&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://codeclimate.com/github/jekyll/jekyll/coverage&quot;&gt;&lt;img src=&quot;https://img.shields.io/codeclimate/coverage/github/jekyll/jekyll.svg&quot; alt=&quot;Test Coverage&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://codeclimate.com/github/jekyll/jekyll&quot;&gt;&lt;img src=&quot;https://img.shields.io/codeclimate/github/jekyll/jekyll.svg&quot; alt=&quot;Code Climate&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://gemnasium.com/jekyll/jekyll&quot;&gt;&lt;img src=&quot;https://img.shields.io/gemnasium/jekyll/jekyll.svg&quot; alt=&quot;Dependency Status&quot; /&gt;&lt;/a&gt;
+&lt;a href=&quot;https://hakiri.io/github/jekyll/jekyll/master&quot;&gt;&lt;img src=&quot;https://hakiri.io/github/jekyll/jekyll/master.svg&quot; alt=&quot;Security&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Jekyll is a simple, blog-aware, static site generator perfect for personal, project, or organization sites. Think of it like a file-based CMS, without all the complexity. Jekyll takes your content, renders Markdown and Liquid templates, and spits out a complete, static website ready to be served by Apache, Nginx or another web server. Jekyll is the engine behind &lt;a href=&quot;https://pages.github.com&quot;&gt;GitHub Pages&lt;/a&gt;, which you can use to host sites right from your GitHub repositories.&lt;/p&gt;
+
+&lt;h2 id=&quot;philosophy&quot;&gt;Philosophy&lt;/h2&gt;
+
+&lt;p&gt;Jekyll does what you tell it to do — no more, no less. It doesn’t try to outsmart users by making bold assumptions, nor does it burden them with needless complexity and configuration. Put simply, Jekyll gets out of your way and allows you to concentrate on what truly matters: your content.&lt;/p&gt;
+
+&lt;p&gt;See: https://jekyllrb.com/philosophy&lt;/p&gt;
+
+&lt;h2 id=&quot;having-trouble&quot;&gt;Having trouble?&lt;/h2&gt;
+
+&lt;p&gt;See: https://jekyllrb.com/docs/troubleshooting/&lt;/p&gt;
+
+&lt;h2 id=&quot;getting-started&quot;&gt;Getting Started&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://jekyllrb.com/docs/installation/&quot;&gt;Install&lt;/a&gt; the gem&lt;/li&gt;
+  &lt;li&gt;Read up about its &lt;a href=&quot;https://jekyllrb.com/docs/usage/&quot;&gt;Usage&lt;/a&gt; and &lt;a href=&quot;https://jekyllrb.com/docs/configuration/&quot;&gt;Configuration&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Take a gander at some existing &lt;a href=&quot;https://wiki.github.com/jekyll/jekyll/sites&quot;&gt;Sites&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/jekyll/jekyll/fork&quot;&gt;Fork&lt;/a&gt; and &lt;a href=&quot;https://jekyllrb.com/docs/contributing/&quot;&gt;Contribute&lt;/a&gt; your own modifications&lt;/li&gt;
+  &lt;li&gt;Have questions? Check out our official forum community &lt;a href=&quot;https://talk.jekyllrb.com/&quot;&gt;Jekyll Talk&lt;/a&gt; or &lt;a href=&quot;https://botbot.me/freenode/jekyll/&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;#jekyll&lt;/code&gt; on irc.freenode.net&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;code-of-conduct&quot;&gt;Code of Conduct&lt;/h2&gt;
+
+&lt;p&gt;In order to have a more open and welcoming community, Jekyll adheres to a
+&lt;a href=&quot;CODE_OF_CONDUCT.markdown&quot;&gt;code of conduct&lt;/a&gt; adapted from the Ruby on Rails code of
+conduct.&lt;/p&gt;
+
+&lt;p&gt;Please adhere to this code of conduct in any interactions you have in the
+Jekyll community. It is strictly enforced on all official Jekyll
+repositories, websites, and resources. If you encounter someone violating
+these terms, please let a &lt;a href=&quot;https://github.com/orgs/jekyll/teams/affinity-team-captains/members&quot;&gt;team captain&lt;/a&gt; know and we will address it as soon as possible.&lt;/p&gt;
+
+&lt;h2 id=&quot;diving-in&quot;&gt;Diving In&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://import.jekyllrb.com/docs/home/&quot;&gt;Migrate&lt;/a&gt; from your previous system&lt;/li&gt;
+  &lt;li&gt;Learn how the &lt;a href=&quot;https://jekyllrb.com/docs/frontmatter/&quot;&gt;YAML Front Matter&lt;/a&gt; works&lt;/li&gt;
+  &lt;li&gt;Put information on your site with &lt;a href=&quot;https://jekyllrb.com/docs/variables/&quot;&gt;Variables&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Customize the &lt;a href=&quot;https://jekyllrb.com/docs/permalinks/&quot;&gt;Permalinks&lt;/a&gt; your posts are generated with&lt;/li&gt;
+  &lt;li&gt;Use the built-in &lt;a href=&quot;https://jekyllrb.com/docs/templates/&quot;&gt;Liquid Extensions&lt;/a&gt; to make your life easier&lt;/li&gt;
+  &lt;li&gt;Use custom &lt;a href=&quot;https://jekyllrb.com/docs/plugins/&quot;&gt;Plugins&lt;/a&gt; to generate content specific to your site&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;license&quot;&gt;License&lt;/h2&gt;
+
+&lt;p&gt;See the &lt;a href=&quot;https://github.com/jekyll/jekyll/blob/master/LICENSE&quot;&gt;LICENSE&lt;/a&gt; file.&lt;/p&gt;
+</description>
+				<pubDate>Tue, 05 Sep 2017 14:10:51 +0800</pubDate>
+				<link>http://localhost:4000/jekyll-xixia/jekyll/2017/09/05/another-copy-of-the-reademe-of-jekyll.html</link>
+				<guid isPermaLink="true">http://localhost:4000/jekyll-xixia/jekyll/2017/09/05/another-copy-of-the-reademe-of-jekyll.html</guid>
+			</item>
+		
+	</channel>
+</rss>
