@@ -2,7 +2,7 @@
 layout: post
 title:  "《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型"
 date:   2018-06-03 14:10:51 +0800
-categories: machine learning
+categories: machine_learning
 tags: machine learning
 description: 《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型.
 ---
