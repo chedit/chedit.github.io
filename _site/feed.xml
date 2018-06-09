@@ -7,6 +7,383 @@
 		<atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
 		
 			<item>
+				<title>维基百科保存为MD和打印pdf</title>
+				<description>&lt;h1 id=&quot;维基百科保存为md和打印pdf&quot;&gt;维基百科保存为MD和打印pdf&lt;/h1&gt;
+
+&lt;p&gt;维基百科保存为MD，比较好的方案是采用copytomarkdown CHROME插件。
+CopyToMarkdown插件采用reMark.js将HTML转换成Markdown格式，总体来说效果还是挺好的。
+但是CopytoMarkdown插件保存维基百科也有几个不如意的地方：&lt;/p&gt;
+
+&lt;p&gt;1.维基百科中出现数学公式的地方。维基百科采用Mathjah来显示数学公式，方法和tex的数学公式语法一致。采用CopyToMarkdwon chrome插件，copy出来的数学公式显示成了HTML一大坨，这样在MD格式中预览的时候就是一堆杂乱无章的HTML。&lt;/p&gt;
+
+&lt;p&gt;2.维基百科中的代码源程序，采用copytomarkdown chrome插件，也显示成了HTML格式。比如：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;The traditional [&quot;Hello, world!&quot; program](https://en.wikipedia.org/wiki/%22Hello,_world!%22_program &quot;&quot;Hello, world!&quot; program&quot;) can be written in Java as:&amp;lt;sup id=&quot;cite_ref-51&quot; class=&quot;reference&quot;&amp;gt;[[51]](https://en.wikipedia.org/wiki/Java_(programming_language)#cite_note-51)&amp;lt;/sup&amp;gt;
+
+&amp;lt;pre&amp;gt;
+classHelloWorldApp {
+    public static void main(String[] args) {
+        System.out.println(&quot;Hello World!&quot;); // Prints the string to the console.
+    }
+}
+&amp;lt;/pre&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;copy成markdown变成&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;## &quot;Hello world&quot; example
+
+The traditional [&quot;Hello, world!&quot; program](https://en.wikipedia.org/wiki/%22Hello,_world!%22_program &quot;&quot;Hello, world!&quot; program&quot;) can be written in Java as:&amp;lt;sup id=&quot;cite_ref-51&quot; class=&quot;reference&quot;&amp;gt;[[51]](https://en.wikipedia.org/wiki/Java_(programming_language)#cite_note-51)&amp;lt;/sup&amp;gt;
+
+&amp;lt;pre&amp;gt;
+classHelloWorldApp {
+    public static void main(String[] args) {
+        System.out.println(&quot;Hello World!&quot;); // Prints the string to the console.
+    }
+}
+&amp;lt;/pre&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;它是由HTML转换过来的。原来的HTML是下面的样子：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;h2&amp;gt;&amp;lt;span class=&quot;mw-headline&quot; id=&quot;.22Hello_world.22_example&quot;&amp;gt;&quot;Hello world&quot; example&amp;lt;/span&amp;gt;&amp;lt;/h2&amp;gt;
+&amp;lt;p&amp;gt;The traditional &amp;lt;a href=&quot;/wiki/%22Hello,_world!%22_program&quot; class=&quot;mw-redirect&quot; title=&quot;&amp;amp;quot;Hello, world!&amp;amp;quot; program&quot;&amp;gt;&quot;Hello, world!&quot; program&amp;lt;/a&amp;gt; can be written in Java as:&amp;lt;sup id=&quot;cite_ref-51&quot; class=&quot;reference&quot;&amp;gt;&amp;lt;a href=&quot;#cite_note-51&quot;&amp;gt;[51]&amp;lt;/a&amp;gt;&amp;lt;/sup&amp;gt;&amp;lt;/p&amp;gt;
+&amp;lt;div class=&quot;mw-highlight mw-content-ltr&quot; dir=&quot;ltr&quot;&amp;gt;
+&amp;lt;pre&amp;gt;&amp;lt;span class=&quot;kd&quot;&amp;gt;class&amp;lt;/span&amp;gt; &amp;lt;span class=&quot;nc&quot;&amp;gt;HelloWorldApp&amp;lt;/span&amp;gt; &amp;lt;span class=&quot;o&quot;&amp;gt;{&amp;lt;/span&amp;gt;
+    &amp;lt;span class=&quot;kd&quot;&amp;gt;public&amp;lt;/span&amp;gt; &amp;lt;span class=&quot;kd&quot;&amp;gt;static&amp;lt;/span&amp;gt; &amp;lt;span class=&quot;kt&quot;&amp;gt;void&amp;lt;/span&amp;gt; &amp;lt;span class=&quot;nf&quot;&amp;gt;main&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;o&quot;&amp;gt;(&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;n&quot;&amp;gt;String&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;o&quot;&amp;gt;[]&amp;lt;/span&amp;gt; &amp;lt;span class=&quot;n&quot;&amp;gt;args&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;o&quot;&amp;gt;)&amp;lt;/span&amp;gt; &amp;lt;span class=&quot;o&quot;&amp;gt;{&amp;lt;/span&amp;gt;
+        &amp;lt;span class=&quot;n&quot;&amp;gt;System&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;o&quot;&amp;gt;.&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;na&quot;&amp;gt;out&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;o&quot;&amp;gt;.&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;na&quot;&amp;gt;println&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;o&quot;&amp;gt;(&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;s&quot;&amp;gt;&quot;Hello World!&quot;&amp;lt;/span&amp;gt;&amp;lt;span class=&quot;o&quot;&amp;gt;);&amp;lt;/span&amp;gt; &amp;lt;span class=&quot;c1&quot;&amp;gt;// Prints the string to the console.&amp;lt;/span&amp;gt;
+    &amp;lt;span class=&quot;o&quot;&amp;gt;}&amp;lt;/span&amp;gt;
+&amp;lt;span class=&quot;o&quot;&amp;gt;}&amp;lt;/span&amp;gt;
+&amp;lt;/pre&amp;gt;&amp;lt;/div&amp;gt;
+&amp;lt;p&amp;gt;&amp;lt;/p&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;3.乱用黑体。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;for example, &amp;lt;code&amp;gt;HelloWorldApp.java&amp;lt;/code&amp;gt;. 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;转换成了：&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;for example, `HelloWorldApp.java`. 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;下面的&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;A &amp;lt;code&amp;gt;&amp;lt;b&amp;gt;class&amp;lt;/b&amp;gt;&amp;lt;/code&amp;gt; that is not declared &amp;lt;code&amp;gt;&amp;lt;b&amp;gt;public&amp;lt;/b&amp;gt;&amp;lt;/code&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;转换成了&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;A `**class**` that is not declared `**public**`
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;在MARKDOWN中渲染不好看。&lt;/p&gt;
+
+&lt;p&gt;4.表格。维基百科中有很多表格，在使用copytomarkdown后，有些变成了乱码。&lt;/p&gt;
+
+&lt;p&gt;5.图像。维基百科的图像，copytomarkdown后，不能显示。不知道是什么原因。
+总体来说，采用copytomarkdown，除了上面几个地方，保存为MD后，还是令人满意的。&lt;/p&gt;
+</description>
+				<pubDate>Sat, 09 Jun 2018 11:15:51 +0800</pubDate>
+				<link>http://localhost:4000/markdown/2018/06/09/wiki-to-markdown-and-pdf.html</link>
+				<guid isPermaLink="true">http://localhost:4000/markdown/2018/06/09/wiki-to-markdown-and-pdf.html</guid>
+			</item>
+		
+			<item>
+				<title>markdown语法</title>
+				<description>&lt;h1 id=&quot;markdown-语法&quot;&gt;markdown 语法&lt;/h1&gt;
+
+&lt;h2 id=&quot;1-排版&quot;&gt;1. 排版&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;粗体&lt;/strong&gt; &lt;em&gt;斜体&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;del&gt;这是一段错误的文本。&lt;/del&gt;&lt;/p&gt;
+
+&lt;p&gt;引用:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;引用Leanote官方的话, 为什么要做Leanote, 原因是…&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;有充列表:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;支持Vim&lt;/li&gt;
+  &lt;li&gt;支持Emacs&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;无序列表:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;项目1&lt;/li&gt;
+  &lt;li&gt;项目2&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;2-图片与链接&quot;&gt;2. 图片与链接&lt;/h2&gt;
+
+&lt;p&gt;图片:&lt;/p&gt;
+&lt;center&gt; ![leanote](http://leanote.com/images/logo/leanote_icon_blue.png) &lt;/center&gt;
+&lt;center&gt;leanote&lt;/center&gt;
+&lt;p&gt;链接:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://leanote.leanote.com&quot;&gt;这是去往Leanote官方博客的链接&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;3-标题&quot;&gt;3. 标题&lt;/h2&gt;
+
+&lt;p&gt;以下是各级标题, 最多支持5级标题&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# h1
+## h2
+### h3
+#### h4
+##### h4
+###### h5
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;4-代码&quot;&gt;4. 代码&lt;/h2&gt;
+
+&lt;p&gt;示例:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;function get(key) {
+    return m[key];
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;代码高亮示例:&lt;/p&gt;
+
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cm&quot;&gt;/**
+* nth element in the fibonacci series.
+* @param n &amp;gt;= 0
+* @return the nth element, &amp;gt;= 0.
+*/&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;fib&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+ 
+&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;fib&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Employee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;empCount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+ 
+   &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;__init__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;salary&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;
+        &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;salary&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;salary&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;Employee&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;empCount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;5-markdown-扩展&quot;&gt;5. Markdown 扩展&lt;/h1&gt;
+
+&lt;p&gt;Markdown 扩展支持:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;表格&lt;/li&gt;
+  &lt;li&gt;定义型列表&lt;/li&gt;
+  &lt;li&gt;Html 标签&lt;/li&gt;
+  &lt;li&gt;脚注&lt;/li&gt;
+  &lt;li&gt;todo list&lt;/li&gt;
+  &lt;li&gt;目录&lt;/li&gt;
+  &lt;li&gt;时序图与流程图&lt;/li&gt;
+  &lt;li&gt;MathJax 公式&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;51-表格&quot;&gt;5.1 表格&lt;/h2&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Item&lt;/th&gt;
+      &lt;th&gt;Value&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Computer&lt;/td&gt;
+      &lt;td&gt;$1600&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Phone&lt;/td&gt;
+      &lt;td&gt;$12&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Pipe&lt;/td&gt;
+      &lt;td&gt;$1&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;可以指定对齐方式, 如Item列左对齐, Value列右对齐, Qty列居中对齐&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: left&quot;&gt;Item&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Value&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Qty&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: left&quot;&gt;Computer&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$1600&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;5&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: left&quot;&gt;Phone&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$12&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;12&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: left&quot;&gt;Pipe&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$1&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;234&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h2 id=&quot;52-定义型列表&quot;&gt;5.2 定义型列表&lt;/h2&gt;
+
+&lt;dl&gt;
+  &lt;dt&gt;名词 1&lt;/dt&gt;
+  &lt;dd&gt;定义 1（左侧有一个可见的冒号和四个不可见的空格）&lt;/dd&gt;
+  &lt;dt&gt;代码块 2&lt;/dt&gt;
+  &lt;dd&gt;这是代码块的定义（左侧有一个可见的冒号和四个不可见的空格）
+
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;代码块（左侧有八个不可见的空格）
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/dd&gt;
+&lt;/dl&gt;
+
+&lt;h2 id=&quot;53-html-标签&quot;&gt;5.3 Html 标签&lt;/h2&gt;
+
+&lt;p&gt;支持在 Markdown 语法中嵌套 Html 标签，譬如，你可以用 Html 写一个纵跨两行的表格：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;table&amp;gt;
+    &amp;lt;tr&amp;gt;
+        &amp;lt;th rowspan=&quot;2&quot;&amp;gt;值班人员&amp;lt;/th&amp;gt;
+        &amp;lt;th&amp;gt;星期一&amp;lt;/th&amp;gt;
+        &amp;lt;th&amp;gt;星期二&amp;lt;/th&amp;gt;
+        &amp;lt;th&amp;gt;星期三&amp;lt;/th&amp;gt;
+    &amp;lt;/tr&amp;gt;
+    &amp;lt;tr&amp;gt;
+        &amp;lt;td&amp;gt;李强&amp;lt;/td&amp;gt;
+        &amp;lt;td&amp;gt;张明&amp;lt;/td&amp;gt;
+        &amp;lt;td&amp;gt;王平&amp;lt;/td&amp;gt;
+    &amp;lt;/tr&amp;gt;
+&amp;lt;/table&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;table&gt;
+    &lt;tr&gt;
+        &lt;th rowspan=&quot;2&quot;&gt;值班人员&lt;/th&gt;
+        &lt;th&gt;星期一&lt;/th&gt;
+        &lt;th&gt;星期二&lt;/th&gt;
+        &lt;th&gt;星期三&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;李强&lt;/td&gt;
+        &lt;td&gt;张明&lt;/td&gt;
+        &lt;td&gt;王平&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;strong&gt;提示&lt;/strong&gt;, 如果想对图片的宽度和高度进行控制, 你也可以通过img标签, 如:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://leanote.com/images/logo/leanote_icon_blue.png&quot; width=&quot;50px&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;54-脚注&quot;&gt;5.4 脚注&lt;/h2&gt;
+
+&lt;p&gt;Leanote[^footnote]来创建一个脚注
+  [^footnote]: Leanote是一款强大的开源云笔记产品.&lt;/p&gt;
+
+&lt;h2 id=&quot;55-todo-list&quot;&gt;5.5 todo list&lt;/h2&gt;
+
+&lt;p&gt;Leanote 近期任务安排:&lt;/p&gt;
+
+&lt;ul class=&quot;task-list&quot;&gt;
+  &lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; class=&quot;task-list-item-checkbox&quot; disabled=&quot;disabled&quot; checked=&quot;checked&quot; /&gt;bbs 维护&lt;/li&gt;
+  &lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; class=&quot;task-list-item-checkbox&quot; disabled=&quot;disabled&quot; /&gt;Desktop 发布新版
+    &lt;ul class=&quot;task-list&quot;&gt;
+      &lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; class=&quot;task-list-item-checkbox&quot; disabled=&quot;disabled&quot; checked=&quot;checked&quot; /&gt;Markdown编辑器添加Todo list&lt;/li&gt;
+      &lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; class=&quot;task-list-item-checkbox&quot; disabled=&quot;disabled&quot; checked=&quot;checked&quot; /&gt;修复白屏问题&lt;/li&gt;
+      &lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; class=&quot;task-list-item-checkbox&quot; disabled=&quot;disabled&quot; /&gt;修复issue3&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; class=&quot;task-list-item-checkbox&quot; disabled=&quot;disabled&quot; /&gt;Leanote 维护
+    &lt;ul class=&quot;task-list&quot;&gt;
+      &lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; class=&quot;task-list-item-checkbox&quot; disabled=&quot;disabled&quot; /&gt;修复issue4&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;56-目录&quot;&gt;5.6 目录&lt;/h2&gt;
+
+&lt;p&gt;通过 &lt;code class=&quot;highlighter-rouge&quot;&gt;[TOC]&lt;/code&gt; 在文档中插入目录, 如:&lt;/p&gt;
+
+&lt;p&gt;[TOC]&lt;/p&gt;
+
+&lt;h2 id=&quot;57-时序图与流程图&quot;&gt;5.7 时序图与流程图&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-sequence&quot;&gt;Alice-&amp;gt;Bob: Hello Bob, how are you?
+Note right of Bob: Bob thinks
+Bob--&amp;gt;Alice: I am good thanks!
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;流程图:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-flow&quot;&gt;st=&amp;gt;start: Start
+e=&amp;gt;end
+op=&amp;gt;operation: My Operation
+cond=&amp;gt;condition: Yes or No?
+ 
+st-&amp;gt;op-&amp;gt;cond
+cond(yes)-&amp;gt;e
+cond(no)-&amp;gt;op
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;strong&gt;提示:&lt;/strong&gt; 更多关于时序图与流程图的语法请参考:&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;ul&gt;
+    &lt;li&gt;&lt;a href=&quot;http://bramp.github.io/js-sequence-diagrams/&quot;&gt;时序图语法&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href=&quot;http://adrai.github.io/flowchart.js&quot;&gt;流程图语法&lt;/a&gt;&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;58-mathjax-公式&quot;&gt;5.8 MathJax 公式&lt;/h2&gt;
+
+&lt;p&gt;$ 表示行内公式：&lt;/p&gt;
+
+&lt;p&gt;质能守恒方程可以用一个很简洁的方程式 $E=mc^2$ 来表达。&lt;/p&gt;
+
+&lt;p&gt;$$ 表示整行公式：&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\sum_{i=1}^n a_i=0&lt;/script&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;f(x_1,x_x,\ldots,x_n) = x_1^2 + x_2^2 + \cdots + x_n^2&lt;/script&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\sum^{j-1}_{k=0}{\widehat{\gamma}_{kj} z_k}&lt;/script&gt;
+
+&lt;p&gt;更复杂的公式:
+&lt;script type=&quot;math/tex&quot;&gt;% &lt;![CDATA[
+\begin{eqnarray}
+\vec\nabla \times (\vec\nabla f) &amp; = &amp; 0  \cdots\cdots梯度场必是无旋场\\
+\vec\nabla \cdot(\vec\nabla \times \vec F) &amp; = &amp; 0\cdots\cdots旋度场必是无散场\\
+\vec\nabla \cdot (\vec\nabla f) &amp; = &amp; {\vec\nabla}^2f\\
+\vec\nabla \times(\vec\nabla \times \vec F) &amp; = &amp; \vec\nabla(\vec\nabla \cdot \vec F) - {\vec\nabla}^2 \vec F\\
+\end{eqnarray} %]]&gt;&lt;/script&gt;&lt;/p&gt;
+
+&lt;p&gt;访问 &lt;a href=&quot;http://meta.math.stackexchange.com/questions/5020/mathjax-basic-tutorial-and-quick-reference&quot;&gt;MathJax&lt;/a&gt; 参考更多使用方法。&lt;/p&gt;
+</description>
+				<pubDate>Sat, 09 Jun 2018 11:10:51 +0800</pubDate>
+				<link>http://localhost:4000/markdown/2018/06/09/grama-of-markdown.html</link>
+				<guid isPermaLink="true">http://localhost:4000/markdown/2018/06/09/grama-of-markdown.html</guid>
+			</item>
+		
+			<item>
 				<title>《安娜卡列尼娜》文本生成——利用 TensorFlow 构建 LSTM 模型</title>
 				<description>&lt;p&gt;&lt;strong&gt;前言&lt;/strong&gt;
 最近看完了 LSTM 的一些外文资料，主要参考了 &lt;a href=&quot;http://link.zhihu.com/?target=http%3A//colah.github.io/posts/2015-08-Understanding-LSTMs/&quot;&gt;Colah 的 blog&lt;/a&gt;以及 &lt;a href=&quot;http://link.zhihu.com/?target=http%3A//karpathy.github.io/&quot;&gt;Andrej Karpathy blog&lt;/a&gt;的一些关于 RNN 和 LSTM 的材料，准备动手去实现一个 LSTM 模型。代码的基础框架来自于 Udacity 上深度学习纳米学位的课程（付费课程）的一个 demo，我刚开始看代码的时候真的是一头雾水，很多东西没有理解，后来反复查阅资料，并我重新对代码进行了学习和修改，对步骤进行了进一步的剖析，下面将一步步用 TensorFlow 来构建 LSTM 模型进行文本学习并试图去生成新的文本。本篇文章比较适合新手去操作，LSTM 层采用的是 BasicLSTMCell。&lt;/p&gt;

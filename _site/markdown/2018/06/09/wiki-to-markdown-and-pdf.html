@@ -141,71 +141,84 @@
             <div class="col-md-9">
                 
 <div class="well article">
-        <h2><a href="/jekyll/2017/09/05/another-copy-of-the-reademe-of-jekyll.html">Another copy of the Readme of Jekyll!</a></h2>
+        <h2><a href="/markdown/2018/06/09/wiki-to-markdown-and-pdf.html">维基百科保存为MD和打印pdf</a></h2>
         <span class="post-date">
             
-            September-5-2017
+            June-9-2018
         </span>
         <hr style="border-top:1px solid #28323C;"/>
     
     <div class="post-content">
-    <h1 id="jekyll"><a href="https://jekyllrb.com/">Jekyll</a></h1>
+    <h1 id="维基百科保存为md和打印pdf">维基百科保存为MD和打印pdf</h1>
 
-<p><a href="https://rubygems.org/gems/jekyll"><img src="https://img.shields.io/gem/v/jekyll.svg" alt="Gem Version" /></a>
-<a href="https://travis-ci.org/jekyll/jekyll"><img src="https://img.shields.io/travis/jekyll/jekyll/master.svg?label=Linux%20build" alt="Linux Build Status" /></a>
-<a href="https://ci.appveyor.com/project/jekyll/jekyll/branch/master"><img src="https://img.shields.io/appveyor/ci/jekyll/jekyll/master.svg?label=Windows%20build" alt="Windows Build status" /></a>
-<a href="https://codeclimate.com/github/jekyll/jekyll/coverage"><img src="https://img.shields.io/codeclimate/coverage/github/jekyll/jekyll.svg" alt="Test Coverage" /></a>
-<a href="https://codeclimate.com/github/jekyll/jekyll"><img src="https://img.shields.io/codeclimate/github/jekyll/jekyll.svg" alt="Code Climate" /></a>
-<a href="https://gemnasium.com/jekyll/jekyll"><img src="https://img.shields.io/gemnasium/jekyll/jekyll.svg" alt="Dependency Status" /></a>
-<a href="https://hakiri.io/github/jekyll/jekyll/master"><img src="https://hakiri.io/github/jekyll/jekyll/master.svg" alt="Security" /></a></p>
+<p>维基百科保存为MD，比较好的方案是采用copytomarkdown CHROME插件。
+CopyToMarkdown插件采用reMark.js将HTML转换成Markdown格式，总体来说效果还是挺好的。
+但是CopytoMarkdown插件保存维基百科也有几个不如意的地方：</p>
 
-<p>Jekyll is a simple, blog-aware, static site generator perfect for personal, project, or organization sites. Think of it like a file-based CMS, without all the complexity. Jekyll takes your content, renders Markdown and Liquid templates, and spits out a complete, static website ready to be served by Apache, Nginx or another web server. Jekyll is the engine behind <a href="https://pages.github.com">GitHub Pages</a>, which you can use to host sites right from your GitHub repositories.</p>
+<p>1.维基百科中出现数学公式的地方。维基百科采用Mathjah来显示数学公式，方法和tex的数学公式语法一致。采用CopyToMarkdwon chrome插件，copy出来的数学公式显示成了HTML一大坨，这样在MD格式中预览的时候就是一堆杂乱无章的HTML。</p>
 
-<h2 id="philosophy">Philosophy</h2>
+<p>2.维基百科中的代码源程序，采用copytomarkdown chrome插件，也显示成了HTML格式。比如：</p>
 
-<p>Jekyll does what you tell it to do — no more, no less. It doesn’t try to outsmart users by making bold assumptions, nor does it burden them with needless complexity and configuration. Put simply, Jekyll gets out of your way and allows you to concentrate on what truly matters: your content.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>The traditional ["Hello, world!" program](https://en.wikipedia.org/wiki/%22Hello,_world!%22_program ""Hello, world!" program") can be written in Java as:&lt;sup id="cite_ref-51" class="reference"&gt;[[51]](https://en.wikipedia.org/wiki/Java_(programming_language)#cite_note-51)&lt;/sup&gt;
 
-<p>See: https://jekyllrb.com/philosophy</p>
+&lt;pre&gt;
+classHelloWorldApp {
+    public static void main(String[] args) {
+        System.out.println("Hello World!"); // Prints the string to the console.
+    }
+}
+&lt;/pre&gt;
+</code></pre></div></div>
+<p>copy成markdown变成</p>
 
-<h2 id="having-trouble">Having trouble?</h2>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>## "Hello world" example
 
-<p>See: https://jekyllrb.com/docs/troubleshooting/</p>
+The traditional ["Hello, world!" program](https://en.wikipedia.org/wiki/%22Hello,_world!%22_program ""Hello, world!" program") can be written in Java as:&lt;sup id="cite_ref-51" class="reference"&gt;[[51]](https://en.wikipedia.org/wiki/Java_(programming_language)#cite_note-51)&lt;/sup&gt;
 
-<h2 id="getting-started">Getting Started</h2>
+&lt;pre&gt;
+classHelloWorldApp {
+    public static void main(String[] args) {
+        System.out.println("Hello World!"); // Prints the string to the console.
+    }
+}
+&lt;/pre&gt;
+</code></pre></div></div>
 
-<ul>
-  <li><a href="https://jekyllrb.com/docs/installation/">Install</a> the gem</li>
-  <li>Read up about its <a href="https://jekyllrb.com/docs/usage/">Usage</a> and <a href="https://jekyllrb.com/docs/configuration/">Configuration</a></li>
-  <li>Take a gander at some existing <a href="https://wiki.github.com/jekyll/jekyll/sites">Sites</a></li>
-  <li><a href="https://github.com/jekyll/jekyll/fork">Fork</a> and <a href="https://jekyllrb.com/docs/contributing/">Contribute</a> your own modifications</li>
-  <li>Have questions? Check out our official forum community <a href="https://talk.jekyllrb.com/">Jekyll Talk</a> or <a href="https://botbot.me/freenode/jekyll/"><code class="highlighter-rouge">#jekyll</code> on irc.freenode.net</a></li>
-</ul>
+<p>它是由HTML转换过来的。原来的HTML是下面的样子：</p>
 
-<h2 id="code-of-conduct">Code of Conduct</h2>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;h2&gt;&lt;span class="mw-headline" id=".22Hello_world.22_example"&gt;"Hello world" example&lt;/span&gt;&lt;/h2&gt;
+&lt;p&gt;The traditional &lt;a href="/wiki/%22Hello,_world!%22_program" class="mw-redirect" title="&amp;quot;Hello, world!&amp;quot; program"&gt;"Hello, world!" program&lt;/a&gt; can be written in Java as:&lt;sup id="cite_ref-51" class="reference"&gt;&lt;a href="#cite_note-51"&gt;[51]&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;div class="mw-highlight mw-content-ltr" dir="ltr"&gt;
+&lt;pre&gt;&lt;span class="kd"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;HelloWorldApp&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kd"&gt;static&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;String&lt;/span&gt;&lt;span class="o"&gt;[]&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;System&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;out&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;println&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;"Hello World!"&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt; &lt;span class="c1"&gt;// Prints the string to the console.&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;/p&gt;
+</code></pre></div></div>
 
-<p>In order to have a more open and welcoming community, Jekyll adheres to a
-<a href="CODE_OF_CONDUCT.markdown">code of conduct</a> adapted from the Ruby on Rails code of
-conduct.</p>
+<p>3.乱用黑体。</p>
 
-<p>Please adhere to this code of conduct in any interactions you have in the
-Jekyll community. It is strictly enforced on all official Jekyll
-repositories, websites, and resources. If you encounter someone violating
-these terms, please let a <a href="https://github.com/orgs/jekyll/teams/affinity-team-captains/members">team captain</a> know and we will address it as soon as possible.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for example, &lt;code&gt;HelloWorldApp.java&lt;/code&gt;. 
+</code></pre></div></div>
 
-<h2 id="diving-in">Diving In</h2>
+<p>转换成了：</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for example, `HelloWorldApp.java`. 
+</code></pre></div></div>
 
-<ul>
-  <li><a href="http://import.jekyllrb.com/docs/home/">Migrate</a> from your previous system</li>
-  <li>Learn how the <a href="https://jekyllrb.com/docs/frontmatter/">YAML Front Matter</a> works</li>
-  <li>Put information on your site with <a href="https://jekyllrb.com/docs/variables/">Variables</a></li>
-  <li>Customize the <a href="https://jekyllrb.com/docs/permalinks/">Permalinks</a> your posts are generated with</li>
-  <li>Use the built-in <a href="https://jekyllrb.com/docs/templates/">Liquid Extensions</a> to make your life easier</li>
-  <li>Use custom <a href="https://jekyllrb.com/docs/plugins/">Plugins</a> to generate content specific to your site</li>
-</ul>
+<p>下面的</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>A &lt;code&gt;&lt;b&gt;class&lt;/b&gt;&lt;/code&gt; that is not declared &lt;code&gt;&lt;b&gt;public&lt;/b&gt;&lt;/code&gt; 
+</code></pre></div></div>
+<p>转换成了</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>A `**class**` that is not declared `**public**`
+</code></pre></div></div>
+<p>在MARKDOWN中渲染不好看。</p>
 
-<h2 id="license">License</h2>
+<p>4.表格。维基百科中有很多表格，在使用copytomarkdown后，有些变成了乱码。</p>
 
-<p>See the <a href="https://github.com/jekyll/jekyll/blob/master/LICENSE">LICENSE</a> file.</p>
+<p>5.图像。维基百科的图像，copytomarkdown后，不能显示。不知道是什么原因。
+总体来说，采用copytomarkdown，除了上面几个地方，保存为MD后，还是令人满意的。</p>
 
     <hr style="border-top:1px solid #28323C;"/>
 
@@ -217,7 +230,7 @@ these terms, please let a <a href="https://github.com/orgs/jekyll/teams/affinity
       
          
             <li class="icon-style"><a href="/categories.html">
-                Jekyll <span>(3)</span>
+                markdown <span>(2)</span>
                 
             </a></li>
         
@@ -233,7 +246,7 @@ these terms, please let a <a href="https://github.com/orgs/jekyll/teams/affinity
          
             <li class="icon-style">
                 <a href="/tags.html">
-                Jekyll <span>(3)</span>
+                markdown <span>(2)</span>
                 
                 </a>
             </li>
@@ -248,8 +261,8 @@ these terms, please let a <a href="https://github.com/orgs/jekyll/teams/affinity
 </div>
 <div class="pagination">
     
-    <a class="btn btn-default" href="/jekyll/2017/09/05/reademe-of-jekyll.html" class="next">前一篇</a>
     
+    <a class="btn btn-default" href="/markdown/2018/06/09/grama-of-markdown.html" class="previous">后一篇</a>
     
 </div>
             </div>
